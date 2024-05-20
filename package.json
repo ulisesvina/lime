@@ -1,0 +1,23 @@
+{
+  "name": "lime",
+  "version": "1.0.0",
+  "main": "./lib/index.js",
+  "license": "MIT",
+  "dependencies": {
+    "tslint": "^6.1.3",
+    "typescript": "^5.4.5"
+  },
+  "files": [
+    "./bin/*",
+    "./lib/*"
+  ],
+  "typings": "./lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "tslint -c tslint.json src/**/*.ts",
+    "prepublish": "npm run build"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12"
+  }
+}
