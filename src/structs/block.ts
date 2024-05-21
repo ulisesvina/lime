@@ -25,14 +25,14 @@ class Block {
     this.nonce = 0;
   }
 
-  calculateHash(): string {
+  public calculateHash(): string {
     const hash = crypto.createHash("sha512");
     hash.update(`${this.index}${this.previousHash}${this.timestamp.toISOString()}${JSON.stringify(this.data)}${this.nonce}`);
     return hash.digest("hex");
   }
 
   async mineBlock(difficulty: number): Promise<void> {
-    await mineBlock(this, difficulty, 4, false);
+    await mineBlock(this, difficulty, 4);
   }
 }
 

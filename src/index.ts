@@ -1,5 +1,6 @@
 import { Blockchain } from "./structs/blockchain";
 import { Block } from "./structs/block";
+import "dotenv/config";
 
 const blockchain = new Blockchain();
 
