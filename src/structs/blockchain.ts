@@ -1,43 +1,68 @@
-import { Block, Payload } from "./block";
+import { Block } from "./block";
+import { Transaction } from "./transaction";
 
 class Blockchain {
   chain: Block[];
   difficulty: number;
+  miningReward: number;
+  pendingTransactions: Transaction[];
 
   constructor() {
     this.chain = [this.createGenesisBlock()];
     this.difficulty = 5;
+    this.miningReward = 10;
+    this.pendingTransactions = [];
   }
 
   createGenesisBlock(): Block {
-    return new Block(0, "", new Date(), { sender: "", recipient: "", amount: 0, description: "Genesis block" });
+    return new Block(new Date(), [], "0");
+  }
+
+  async minePendingTransactions(miningRewardAddress: string) {
+    const latestBlock = this.getLatestBlock();
+    const block = new Block(
+      new Date(),
+      this.pendingTransactions,
+      latestBlock.hash
+    );
+
+    await block.mineBlock(this.difficulty);
+
+    if (!this.isValidBlock(block, latestBlock)) {
+      throw new Error("Invalid block.");
+    }
+
+    this.chain.push(block);
+
+    this.pendingTransactions = [
+      new Transaction("", miningRewardAddress, this.miningReward),
+    ];
   }
 
   getLatestBlock(): Block {
     return this.chain[this.chain.length - 1];
   }
 
-  isValidPayload(payload: Payload): boolean {
-    return payload.sender !== "" && payload.recipient !== "" && payload.amount >= 0;
+  isValidTransaction(transaction: Transaction): boolean {
+    return (
+      transaction.sender !== "" &&
+      transaction.recipient !== "" &&
+      transaction.amount > 0
+    );
   }
 
   isValidBlock(newBlock: Block, previousBlock: Block): boolean {
-    return newBlock.index === previousBlock.index + 1 &&
-           newBlock.previousHash === previousBlock.hash &&
-           newBlock.hash === newBlock.calculateHash();
+    if (newBlock.hash !== newBlock.calculateHash()) return false;
+    if (newBlock.previousHash !== previousBlock.hash) return false;
+    if (!newBlock.hash.startsWith("0".repeat(this.difficulty))) return false;
+    return true;
   }
 
-  async addBlock(newBlock: Block): Promise<void> {
-    const latestBlock = this.getLatestBlock();
+  async createTransaction(transaction: Transaction): Promise<void> {
+    if (!this.isValidTransaction(transaction))
+      throw new Error("Invalid transaction.");
 
-    if (!this.isValidPayload(newBlock.data)) throw new Error("Invalid payload.");
-
-    newBlock.previousHash = latestBlock.hash;
-    await newBlock.mineBlock(this.difficulty);
-
-    if (!this.isValidBlock(newBlock, latestBlock)) throw new Error("Invalid block. Block validation failed.");
-
-    this.chain.push(newBlock);
+    this.pendingTransactions.push(transaction);
   }
 
   isChainValid(): boolean {

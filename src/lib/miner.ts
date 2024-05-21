@@ -8,9 +8,8 @@ export async function mineBlock(
   threadCount: number = 4
 ): Promise<void> {
   if (isMainThread) {
-    const target: string = [...Array(difficulty)]
-      .map(() => Math.floor(Math.random() * 16).toString(16))
-      .join("");
+    const target = "0".repeat(difficulty);
+
     const nonceRange = Math.ceil(Number.MAX_SAFE_INTEGER / threadCount);
     const promises = Array.from({ length: threadCount }, (_, i) => {
       const startNonce = i * nonceRange;
@@ -29,14 +28,6 @@ export async function mineBlock(
     if (successfulResult) {
       block.nonce = successfulResult!.nonce;
       block.hash = successfulResult!.hash;
-      if (process.env.VERBOSE_MINER === "true") {
-        console.log(`Block mined: ${block.hash}`);
-        console.log(`Nonce: ${successfulResult!.nonce}`);
-        console.log(
-          `Time: ${new Date().getTime() - block.timestamp.getTime()}ms`
-        );
-        console.log(`Target: ${target}`);
-      }
     } else {
       console.error("Failed to mine block");
     }
@@ -53,13 +44,12 @@ function createWorkerPromise(
   return new Promise((resolve, reject) => {
     const worker = new Worker(__filename, {
       workerData: {
-        index: block.index,
         previousHash: block.previousHash,
         timestamp: block.timestamp,
-        data: block.data,
-        difficulty,
+        transactions: block.transactions,
         startNonce,
         endNonce,
+        difficulty,
         target,
       },
     });
@@ -74,13 +64,20 @@ function createWorkerPromise(
 }
 
 if (!isMainThread) {
-  const { index, previousHash, timestamp, data, startNonce, endNonce, target } =
-    workerData;
+  const {
+    previousHash,
+    timestamp,
+    transactions,
+    startNonce,
+    endNonce,
+    target,
+  } = workerData;
+
   for (let nonce = startNonce; nonce < endNonce; nonce++) {
     const hash = crypto.createHash("sha512");
     hash.update(
-      `${index}${previousHash}${timestamp.toISOString()}${JSON.stringify(
-        data
+      `${previousHash}${timestamp.toISOString()}${JSON.stringify(
+        transactions
       )}${nonce}`
     );
     const digest = hash.digest("hex");

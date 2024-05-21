@@ -1,39 +1,34 @@
 import * as crypto from "node:crypto";
 import { mineBlock } from "../lib/miner";
-
-type Payload = {
-  sender: string;
-  recipient: string;
-  amount: number;
-  description?: string;
-};
+import type { Transaction } from "./transaction";
 
 class Block {
-  index: number;
   previousHash: string;
   timestamp: Date;
-  data: Payload;
+  transactions: Transaction[];
   hash: string;
   nonce: number;
 
-  constructor(index: number, previousHash: string, timestamp: Date, data: Payload) {
-    this.index = index;
+  constructor(timestamp: Date, transactions: Transaction[], previousHash = "") {
     this.previousHash = previousHash;
     this.timestamp = timestamp;
-    this.data = data;
-    this.hash = this.calculateHash();
+    this.transactions = transactions;
     this.nonce = 0;
+    this.hash = this.calculateHash();
   }
 
   public calculateHash(): string {
     const hash = crypto.createHash("sha512");
-    hash.update(`${this.index}${this.previousHash}${this.timestamp.toISOString()}${JSON.stringify(this.data)}${this.nonce}`);
+    hash.update(
+      `${this.previousHash}${this.timestamp.toISOString()}${JSON.stringify(this.transactions)}${this.nonce}`
+    );
     return hash.digest("hex");
   }
 
   async mineBlock(difficulty: number): Promise<void> {
-    await mineBlock(this, difficulty, 4);
+    await mineBlock(this, difficulty);
+    this.hash = this.calculateHash(); // Ensure the hash is recalculated after mining
   }
 }
 
-export { Block, Payload };
+export { Block };
